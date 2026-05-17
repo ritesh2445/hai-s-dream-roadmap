@@ -5,7 +5,6 @@ import { useAppState } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/projects")({
   component: Projects,
-  head: () => ({ meta: [{ title: "Projects · Hai's Big Adventure ♡" }] }),
 });
 
 function Projects() {

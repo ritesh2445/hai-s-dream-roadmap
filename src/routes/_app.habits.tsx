@@ -5,7 +5,6 @@ import { useAppState, addXP } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/habits")({
   component: Habits,
-  head: () => ({ meta: [{ title: "Habits · Hai's Big Adventure ♡" }] }),
 });
 
 function lastNDays(n: number) {

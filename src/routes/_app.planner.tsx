@@ -13,7 +13,6 @@ export const Route = createFileRoute("/_app/planner")({
     week: s.week ? Math.max(1, Math.min(52, Number(s.week))) : undefined,
   }),
   component: Planner,
-  head: () => ({ meta: [{ title: "Weekly Planner · Hai's Big Adventure ♡" }] }),
 });
 
 function celebrate() {

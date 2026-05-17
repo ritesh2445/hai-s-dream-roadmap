@@ -5,14 +5,6 @@ import { FloatingDoodles, Sparkles } from "@/components/Sparkles";
 import { useAppState } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Hai's Big Adventure ♡ — A cozy roadmap to a brand new life" },
-      { name: "description", content: "A physics grad's gamified weekly study tracker and roadmap into machine learning, tech jobs, and moving abroad." },
-      { property: "og:title", content: "Hai's Big Adventure ♡" },
-      { property: "og:description", content: "A romanticised healing journey through coding, growth, and building a new life." },
-    ],
-  }),
   component: Landing,
 });
 

@@ -5,7 +5,6 @@ import { useAppState } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/roadmap")({
   component: Roadmap,
-  head: () => ({ meta: [{ title: "Roadmap · Hai's Big Adventure ♡" }] }),
 });
 
 const PHASE_META = {

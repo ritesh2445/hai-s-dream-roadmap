@@ -5,7 +5,6 @@ import { useAppState, addXP } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/milestones")({
   component: Milestones,
-  head: () => ({ meta: [{ title: "Milestones · Hai's Big Adventure ♡" }] }),
 });
 
 function Milestones() {

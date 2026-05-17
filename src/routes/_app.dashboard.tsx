@@ -7,7 +7,6 @@ import { ROADMAP, HABITS } from "@/lib/roadmap";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "Dashboard · Hai's Big Adventure ♡" }] }),
 });
 
 function StatCard({ label, value, hint, gradient }: { label: string; value: string | number; hint?: string; gradient: string }) {

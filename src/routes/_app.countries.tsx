@@ -4,7 +4,6 @@ import { COUNTRIES } from "@/lib/roadmap";
 
 export const Route = createFileRoute("/_app/countries")({
   component: Countries,
-  head: () => ({ meta: [{ title: "Dream Countries · Hai's Big Adventure ♡" }] }),
 });
 
 function Countries() {

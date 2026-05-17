@@ -6,7 +6,6 @@ import { useAppState } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/mood")({
   component: Mood,
-  head: () => ({ meta: [{ title: "Mood Journal · Hai's Big Adventure ♡" }] }),
 });
 
 function Mood() {

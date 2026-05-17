@@ -3,7 +3,6 @@ import { useAppState } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/settings")({
   component: Settings,
-  head: () => ({ meta: [{ title: "Settings · Hai's Big Adventure ♡" }] }),
 });
 
 function Settings() {
