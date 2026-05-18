@@ -1,6 +1,8 @@
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useAppState, daysSince, levelFromXP } from "@/lib/store";
+import { useAuthContext } from "@/lib/auth-context";
 import { FloatingDoodles, Sparkles } from "./Sparkles";
 
 const NAV = [
@@ -17,10 +19,28 @@ const NAV = [
 ] as const;
 
 export function Layout() {
+  const { user, loading } = useAuthContext();
+  const navigate = useNavigate();
   const [s] = useAppState();
   const loc = useLocation();
   const days = daysSince(s.startDate);
   const level = levelFromXP(s.xp);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate({ to: "/" });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-300 border-t-violet-400" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="relative min-h-screen">

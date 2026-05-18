@@ -1,167 +1,197 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import { Mascot } from "@/components/Mascot";
 import { FloatingDoodles, Sparkles } from "@/components/Sparkles";
-import { useAppState } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+import { useAuthContext } from "@/lib/auth-context";
 
-export const Route = createFileRoute("/")({
-  component: Landing,
-});
+export const Route = createFileRoute("/")(({
+  component: AuthPage,
+}));
 
-function Landing() {
-  const [s] = useAppState();
+function AuthPage() {
+  const navigate = useNavigate();
+  const { user, loading } = useAuthContext();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // Redirect if already signed in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [user, loading, navigate]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setBusy(true);
+
+    if (mode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+      else navigate({ to: "/dashboard" });
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setError(error.message);
+      else setInfo("Check your email to confirm your account, then sign in ♡");
+    }
+
+    setBusy(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+          className="h-8 w-8 rounded-full border-4 border-pink-300 border-t-violet-400"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       <FloatingDoodles />
-      {s.settings.sparkles && <Sparkles />}
+      <Sparkles />
 
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="font-display text-xl text-gradient">Hai's Big Adventure ♡</div>
-        <Link
-          to="/dashboard"
-          className="rounded-full glass px-4 py-2 text-sm font-medium hover:scale-105 transition-transform"
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center gap-10 px-6 py-12 md:flex-row">
+        {/* Left — branding */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7 }}
+          className="flex flex-col items-center gap-4 md:items-start"
         >
-          Enter ♡
-        </Link>
-      </header>
-
-      <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-12 md:grid-cols-[1.2fr_1fr] md:py-20">
-        <div>
+          <div className="relative">
+            <div className="absolute inset-0 rounded-[40%] bg-gradient-to-br from-pink-200/70 via-violet-200/60 to-sky-200/70 blur-3xl" />
+            <div className="relative">
+              <Mascot size={160} />
+            </div>
+          </div>
+          <h1 className="font-display text-5xl leading-tight text-gradient text-center md:text-left">
+            Hai's Big<br />Adventure ♡
+          </h1>
+          <p className="max-w-xs text-center text-foreground/70 md:text-left">
+            A cozy roadmap to machine learning, dream countries, and a brand new life.
+          </p>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-xs font-medium"
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            className="inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs font-medium"
           >
             <span className="animate-twinkle">✦</span> made with love · just for you
           </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="mt-5 font-display text-5xl leading-[1.05] sm:text-6xl md:text-7xl"
-          >
-            Hai's Big <span className="text-gradient">Adventure</span> <span className="inline-block animate-wiggle">♡</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="mt-5 max-w-xl text-lg text-foreground/80"
-          >
-            A physics grad's roadmap to machine learning, tech jobs, and a brand new life.
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="mt-3 max-w-xl italic text-foreground/70"
-          >
-            "You don't have to become perfect overnight, baby. Just show up a little every day."
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="mt-8 flex flex-wrap items-center gap-3"
-          >
-            <Link
-              to="/dashboard"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-pink-300 via-rose-300 to-violet-300 px-7 py-3.5 text-base font-semibold text-white shadow-soft transition-transform hover:scale-[1.04]"
-            >
-              <span className="relative z-10">Start My Journey ✨</span>
-              <span className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-700 group-hover:translate-x-full" />
-            </Link>
-            <Link
-              to="/roadmap"
-              className="rounded-full glass px-5 py-3 text-sm font-medium hover:scale-105 transition-transform"
-            >
-              peek the roadmap →
-            </Link>
-          </motion.div>
-
-          {/* progress strip */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="mt-10 glass rounded-3xl p-4"
-          >
-            <div className="flex items-center justify-between text-xs font-medium text-foreground/70">
-              <span>52-week journey</span>
-              <span>1% in · 99% to dream ♡</span>
-            </div>
-            <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/60">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "4%" }}
-                transition={{ duration: 1.4, delay: 1.1 }}
-                className="h-full bg-gradient-to-r from-pink-400 via-violet-400 to-sky-400"
-              />
-            </div>
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="relative mx-auto flex h-[420px] w-full max-w-md items-center justify-center"
-        >
-          <div className="absolute inset-0 rounded-[40%] bg-gradient-to-br from-pink-200/70 via-violet-200/60 to-sky-200/70 blur-3xl" />
-          <div className="relative">
-            <Mascot size={220} />
-          </div>
-          {/* floating cards */}
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity }}
-            className="absolute -left-2 top-6 glass-strong rounded-2xl px-3 py-2 text-xs font-medium"
-          >
-            ✿ Week 1 unlocked
-          </motion.div>
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 5, repeat: Infinity }}
-            className="absolute -right-2 bottom-10 glass-strong rounded-2xl px-3 py-2 text-xs font-medium"
-          >
-            🔥 streak +1
-          </motion.div>
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 6, repeat: Infinity }}
-            className="absolute right-6 top-0 glass-strong rounded-2xl px-3 py-2 text-xs font-medium"
-          >
-            ✈ Amsterdam ♡
-          </motion.div>
         </motion.div>
-      </section>
 
-      <section className="mx-auto max-w-6xl px-6 pb-24">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { t: "Cozy roadmap", d: "52 hand-written weeks. Tiny, kind, doable." },
-            { t: "Boyfriend-coded", d: "Soft motivation, real progress, real love." },
-            { t: "A new life", d: "Canada, NL, DE, SE, PT — your future is patient." },
-          ].map((c, i) => (
-            <motion.div
-              key={c.t}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass rounded-3xl p-5 hover:-translate-y-1 transition-transform"
-            >
-              <div className="font-display text-lg">{c.t}</div>
-              <p className="mt-1 text-sm text-foreground/70">{c.d}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+        {/* Right — auth form */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
+          className="w-full max-w-sm"
+        >
+          <div className="glass-strong rounded-3xl p-8 shadow-soft">
+            {/* Tab switcher */}
+            <div className="flex rounded-2xl bg-white/60 p-1 mb-6">
+              {(["signin", "signup"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { setMode(m); setError(""); setInfo(""); }}
+                  className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
+                    mode === m
+                      ? "bg-gradient-to-r from-pink-300 to-violet-300 text-white shadow-soft"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  {m === "signin" ? "Sign in" : "Sign up"}
+                </button>
+              ))}
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.form
+                key={mode}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/60 mb-1.5">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hai@example.com"
+                    className="w-full rounded-xl bg-white/80 px-4 py-2.5 text-sm outline-none ring-pink-200 focus:ring-2 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/60 mb-1.5">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl bg-white/80 px-4 py-2.5 text-sm outline-none ring-pink-200 focus:ring-2 transition"
+                  />
+                </div>
+
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="rounded-xl bg-rose-100 px-4 py-2.5 text-xs font-medium text-rose-700"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+
+                {info && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="rounded-xl bg-emerald-100 px-4 py-2.5 text-xs font-medium text-emerald-700"
+                  >
+                    {info}
+                  </motion.p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full rounded-full bg-gradient-to-r from-pink-300 via-rose-300 to-violet-300 py-3 text-sm font-semibold text-white shadow-soft transition hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {busy ? "✦ loading..." : mode === "signin" ? "Sign in ♡" : "Create account ✨"}
+                </button>
+              </motion.form>
+            </AnimatePresence>
+
+            <p className="mt-6 text-center text-[11px] text-foreground/50">
+              your journey is safe with us · stored in supabase ♡
+            </p>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

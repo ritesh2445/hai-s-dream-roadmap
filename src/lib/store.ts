@@ -1,83 +1,107 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { supabase, AppProfile, fetchProfile, upsertProfile, defaultProfile } from "./supabase";
+import type { User } from "@supabase/supabase-js";
 
-export type WeekState = {
-  done: Record<string, boolean>; // task ids
-  reflection: string;
-  mood: string;
-  completed: boolean;
-};
+// Re-export types for compatibility
+export type { WeekState, AppProfile as AppState } from "./supabase";
 
-export type AppState = {
-  startDate: string; // ISO
-  xp: number;
-  streak: number;
-  lastCheckIn: string | null;
-  weeks: Record<number, WeekState>;
-  habits: Record<string, string[]>; // habitId -> ISO date strings completed
-  moodEntries: { id: string; date: string; mood: string; note: string }[];
-  milestones: Record<string, boolean>;
-  unlockedLetters: number[];
-  projects: Record<string, { progress: number; notes: string; deployed: boolean }>;
-  settings: { theme: "dream" | "sunset" | "night"; mascot: "bunny" | "ghost" | "star"; sparkles: boolean };
-};
+// ── Auth helpers ──────────────────────────────────────────────────────────────
 
-const KEY = "hai-adventure-v1";
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const defaultState: AppState = {
-  startDate: new Date().toISOString(),
-  xp: 0,
-  streak: 0,
-  lastCheckIn: null,
-  weeks: {},
-  habits: {},
-  moodEntries: [],
-  milestones: {},
-  unlockedLetters: [0],
-  projects: {},
-  settings: { theme: "dream", mascot: "bunny", sparkles: true },
-};
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setLoading(false);
+    });
 
-function load(): AppState {
-  if (typeof window === "undefined") return defaultState;
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return defaultState;
-    return { ...defaultState, ...JSON.parse(raw) };
-  } catch {
-    return defaultState;
-  }
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  return { user, loading };
 }
 
-let listeners: Array<(s: AppState) => void> = [];
-let current: AppState | null = null;
-
-function getState(): AppState {
-  if (current === null) current = load();
-  return current;
+export async function signInWithEmail(email: string, password: string) {
+  return supabase.auth.signInWithPassword({ email, password });
 }
 
-function setState(updater: (s: AppState) => AppState) {
+export async function signUpWithEmail(email: string, password: string) {
+  return supabase.auth.signUp({ email, password });
+}
+
+export async function signOut() {
+  return supabase.auth.signOut();
+}
+
+// ── Global in-memory store (synced with Supabase) ─────────────────────────────
+
+let listeners: Array<(s: AppProfile) => void> = [];
+let current: AppProfile | null = null;
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function getState(): AppProfile {
+  return current ?? defaultProfile("anon");
+}
+
+function notifyListeners(s: AppProfile) {
+  listeners.forEach((l) => l(s));
+}
+
+function scheduleSave(profile: AppProfile) {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    upsertProfile(profile);
+  }, 800); // debounce saves by 800ms
+}
+
+function setState(updater: (s: AppProfile) => AppProfile) {
   const next = updater(getState());
   current = next;
-  if (typeof window !== "undefined") {
-    localStorage.setItem(KEY, JSON.stringify(next));
-  }
-  listeners.forEach((l) => l(next));
+  notifyListeners(next);
+  scheduleSave(next);
 }
 
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
 export function useAppState() {
-  const [s, setS] = useState<AppState>(() => getState());
+  const [s, setS] = useState<AppProfile>(() => getState());
+  const mounted = useRef(true);
+
   useEffect(() => {
-    const l = (n: AppState) => setS(n);
+    mounted.current = true;
+    const l = (n: AppProfile) => { if (mounted.current) setS(n); };
     listeners.push(l);
     setS(getState());
     return () => {
+      mounted.current = false;
       listeners = listeners.filter((x) => x !== l);
     };
   }, []);
-  const update = useCallback((u: (s: AppState) => AppState) => setState(u), []);
+
+  const update = useCallback((u: (s: AppProfile) => AppProfile) => setState(u), []);
   return [s, update] as const;
 }
+
+// ── Bootstrap — loads profile from Supabase once user is known ─────────────────
+
+export async function bootstrapProfile(userId: string) {
+  const profile = await fetchProfile(userId);
+  current = profile;
+  notifyListeners(profile);
+  return profile;
+}
+
+export function clearProfileCache() {
+  current = null;
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
 
 export function addXP(amount: number) {
   setState((s) => ({ ...s, xp: s.xp + amount }));
@@ -95,9 +119,9 @@ export function daysSince(iso: string) {
 export function checkInToday() {
   setState((s) => {
     const today = new Date().toDateString();
-    if (s.lastCheckIn === today) return s;
+    if (s.last_check_in === today) return s;
     const yesterday = new Date(Date.now() - 86400000).toDateString();
-    const streak = s.lastCheckIn === yesterday ? s.streak + 1 : 1;
-    return { ...s, lastCheckIn: today, streak, xp: s.xp + 5 };
+    const streak = s.last_check_in === yesterday ? s.streak + 1 : 1;
+    return { ...s, last_check_in: today, streak, xp: s.xp + 5 };
   });
 }

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useAppState } from "@/lib/store";
+import { useAppState, signOut } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/settings")({
   component: Settings,
@@ -10,8 +10,18 @@ function Settings() {
 
   function reset() {
     if (!confirm("reset all progress? this can't be undone ♡")) return;
-    localStorage.removeItem("hai-adventure-v1");
-    location.reload();
+    update((st) => ({
+      ...st,
+      xp: 0,
+      streak: 0,
+      last_check_in: null,
+      weeks: {},
+      habits: {},
+      mood_entries: [],
+      milestones: {},
+      unlocked_letters: [0],
+      projects: {},
+    }));
   }
 
   return (
@@ -68,9 +78,9 @@ function Settings() {
       </section>
 
       <section className="glass-strong rounded-3xl p-6">
-        <h2 className="font-display text-xl">data</h2>
-        <p className="text-sm text-foreground/70 mt-1">your progress lives in this browser only. cozy and private.</p>
-        <div className="mt-4 flex gap-3">
+        <h2 className="font-display text-xl">data & account</h2>
+        <p className="text-sm text-foreground/70 mt-1">your progress is securely stored and synced to your Supabase database ♡</p>
+        <div className="mt-4 flex flex-wrap gap-3">
           <button
             onClick={() => {
               const blob = new Blob([JSON.stringify(s, null, 2)], { type: "application/json" });
@@ -81,7 +91,13 @@ function Settings() {
             }}
             className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold hover:scale-105 transition"
           >
-            export ♡
+            export backup ♡
+          </button>
+          <button
+            onClick={() => signOut()}
+            className="rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700 hover:scale-105 transition"
+          >
+            sign out
           </button>
           <button onClick={reset} className="rounded-full bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 hover:scale-105 transition">
             reset progress
